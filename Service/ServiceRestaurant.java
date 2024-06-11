@@ -57,7 +57,7 @@ public class ServiceRestaurant implements RestaurantService {
     }
 
     public boolean makeReservation(String firstName, String lastName, int numGuests, String phone, int restaurantId) throws RemoteException {
-        String sql = "INSERT INTO RESERVATIONS (id, first_name, last_name, num_guests, phone, restaurant_id) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO RESERVATIONS (id, first_name, last_name, num_guests, phone, restaurant_id) VALUES (reservations_seq.NEXTVAL, ?, ?, ?, ?, ?)";
         try (Connection conn = connect();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, firstName);
@@ -66,9 +66,11 @@ public class ServiceRestaurant implements RestaurantService {
             pstmt.setString(4, phone);
             pstmt.setInt(5, restaurantId);
             pstmt.executeUpdate();
+            System.out.println("la réservation est bien enregistré dans la base de donnée");
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
+            System.out.println("Erreur lors de la tentative de réservation");
             throw new RemoteException("Database error.");
         }
     }

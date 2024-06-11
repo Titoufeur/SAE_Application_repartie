@@ -20,7 +20,7 @@ public class Client{
 			/*Lancer le service*/
 			System.out.println(rs.getAllRestaurants());
 			System.out.println("Maintenant on essaye de faire une réservation : ");
-			boolean response = rs.makeReservation("Titouan", "LETONDAL", 1, "06 07 09 37 39", 1);
+			boolean response = rs.makeReservation("Bastien", "Jallais", 1, "06 06 06 06 06", 6);
 			System.out.println(response);
 		} catch (Exception e){
 			System.out.println(e.getMessage());
