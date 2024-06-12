@@ -34,10 +34,22 @@ async function fetchStations() {
     });
 }
 
-async function fetchRestaurant(){
-
+function fetchRestaurant(){
+    fetch("http://localhost:8080/restaurants")
+        .then(response => {
+            if(response.ok){
+                return response.json();
+            } else {
+                throw new Error("Erreur fetch api restaurant, response not ok");
+            }
+        }).then(data => {
+            console.log(data);
+        }).catch(error => {
+            console.log("Erreur fetch api restaurant but response is ok");
+        })
 }
 
+fetchRestaurant();
 fetchStations();
 
 setInterval(fetchStations, 5000);
