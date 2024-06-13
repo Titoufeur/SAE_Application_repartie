@@ -16,7 +16,7 @@ public class LancerService {
 			Registry reg = LocateRegistry.getRegistry();
 			//Enregistrer les services dans l'annuaire avec un nom
 			//reg.rebind("restaurants", rs);
-			reg.rebind("http", shttp);
+			reg.rebind("restaurants", shttp);
         	} catch(RemoteException rm){
         		rm.printStackTrace();
         	}

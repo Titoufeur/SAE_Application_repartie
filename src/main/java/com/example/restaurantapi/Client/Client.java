@@ -1,30 +1,26 @@
-import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
-import java.util.Scanner;
-import java.rmi.RemoteException;
 import java.rmi.NotBoundException;
-import java.rmi.server.ServerNotActiveException;
+import java.rmi.RemoteException;
 
-public class Client{
-	//passer en argument l'IP de la machine hébergeant le service
-	public static void main(String[] args) throws RemoteException, NotBoundException, ServerNotActiveException {
-		try{
-			//Récupérer l'annuaire
-			Registry reg = LocateRegistry.getRegistry(args[0], 1099);
-			/*
-			* Créer une instance de l'objet du service
-			* Récupérer le service grace à son nom dans l'annuaire avec la méthode lookup
-			*/
-			RestaurantService rs = (RestaurantService) reg.lookup("restaurants");
-			/*Lancer le service*/
-			System.out.println(rs.getAllRestaurants());
-			System.out.println("Maintenant on essaye de faire une réservation : ");
-			boolean response = rs.makeReservation("Bastien", "Jallais", 1, "06 06 06 06 06", 6);
-			System.out.println(response);
-		} catch (Exception e){
-			System.out.println(e.getMessage());
-			e.printStackTrace();
-		}
-	}
+public class Client {
+    public static void main(String[] args) {
+        if (args.length < 1) {
+            System.err.println("Usage: java Client <server_ip>");
+            return;
+        }
+
+        try {
+            Registry reg = LocateRegistry.getRegistry(args[0], 1099);
+            RestaurantService rs = (RestaurantService) reg.lookup("restaurants");
+
+            System.out.println(rs.getAllRestaurants());
+            System.out.println("Essai de faire une réservation : ");
+            boolean response = rs.makeReservation("Bastien", "Jallais", 1, "06 06 06 06 06", 6);
+            System.out.println(response);
+        } catch (Exception e) {
+            System.err.println("Erreur client : " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }

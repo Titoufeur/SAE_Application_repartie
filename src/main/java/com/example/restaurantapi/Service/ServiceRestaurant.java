@@ -1,6 +1,11 @@
-import java.rmi.server.UnicastRemoteObject;
 import java.rmi.RemoteException;
-import java.sql.*;
+import java.rmi.server.UnicastRemoteObject;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,7 +87,7 @@ public class ServiceRestaurant implements RestaurantService {
             return true;
         } catch (SQLException e) {
             // Annule la mise à jour
-            conn.rollback();
+            //conn.rollback();
             e.printStackTrace();
             System.out.println("Erreur lors de la tentative de réservation");
             throw new RemoteException("Database error.");
