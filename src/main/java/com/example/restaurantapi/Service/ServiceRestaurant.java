@@ -34,6 +34,11 @@ public class ServiceRestaurant implements RestaurantService {
         List<Restaurant> restaurants = new ArrayList<>();
         try{
           Connection conn = connect();
+          // Mets l'autocommit à false
+          connect().setAutoCommit(false);
+          // Pose un verrou sur la table restaurant
+          connect().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
           Statement stmt = conn.createStatement();
           String sql = "SELECT * FROM RESTAURANTS";
           ResultSet rs = stmt.executeQuery(sql);
@@ -58,8 +63,13 @@ public class ServiceRestaurant implements RestaurantService {
 
     public boolean makeReservation(String firstName, String lastName, int numGuests, String phone, int restaurantId) throws RemoteException {
         String sql = "INSERT INTO RESERVATIONS (id, first_name, last_name, num_guests, phone, restaurant_id) VALUES (reservations_seq.NEXTVAL, ?, ?, ?, ?, ?)";
-        try (Connection conn = connect();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        Connection conn = null;
+        try {
+            conn = connect();
+            // Mets l'autocommit à false
+            conn.setAutoCommit(false);
+            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, firstName);
             pstmt.setString(2, lastName);
             pstmt.setInt(3, numGuests);
@@ -67,8 +77,12 @@ public class ServiceRestaurant implements RestaurantService {
             pstmt.setInt(5, restaurantId);
             pstmt.executeUpdate();
             System.out.println("la réservation est bien enregistré dans la base de donnée");
+            // Valide la modification
+            conn.commit();
             return true;
         } catch (SQLException e) {
+            // Annule la mise à jour
+            conn.rollback();
             e.printStackTrace();
             System.out.println("Erreur lors de la tentative de réservation");
             throw new RemoteException("Database error.");
