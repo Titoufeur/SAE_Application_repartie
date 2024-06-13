@@ -1,3 +1,4 @@
+//package Service;
 import java.rmi.server.UnicastRemoteObject;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
@@ -7,9 +8,9 @@ import java.rmi.registry.LocateRegistry;
 public class LancerService {
 	public static void main(String[] args){
 		//ServiceRestaurant sr = new ServiceRestaurant(args[0], args[1]);
-		serviceHTTP sh = new serviceHTTP();
+		serviceHTTP sh = new serviceHTTP("https://carto.g-ny.org/data/cifs/cifs_waze_v2.json");
 		try {
-		//Exporter les instances
+			//Exporter les instances
 			//RestaurantService rs = (RestaurantService) UnicastRemoteObject.exportObject(sr, 0);
 			HTTPService shttp = (HTTPService) UnicastRemoteObject.exportObject(sh, 0);
 			//Récupérer l'annunaire
@@ -17,8 +18,8 @@ public class LancerService {
 			//Enregistrer les services dans l'annuaire avec un nom
 			//reg.rebind("restaurants", rs);
 			reg.rebind("http", shttp);
-        	} catch(RemoteException rm){
-        		rm.printStackTrace();
-        	}
+		} catch(RemoteException rm){
+			rm.printStackTrace();
+		}
 	}
 }

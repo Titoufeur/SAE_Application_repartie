@@ -1,47 +1,53 @@
-import java.rmi.server.UnicastRemoteObject;
+//package Service;
 import java.rmi.RemoteException;
-import java.sql.*;
+import java.rmi.server.UnicastRemoteObject;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ServiceRestaurant implements RestaurantService {
 
-  private String motdepasse;
-  private String identifiant;
+    private String motdepasse;
+    private String identifiant;
 
 
-  public ServiceRestaurant(String identifiant, String motdepasse){
-    this.motdepasse = motdepasse;
-    this.identifiant = identifiant;
-  }
+    public ServiceRestaurant(String identifiant, String motdepasse){
+        this.motdepasse = motdepasse;
+        this.identifiant = identifiant;
+    }
 
-  public Connection connect() throws SQLException {
-    try {
+    public Connection connect() throws SQLException {
+        try {
             Class.forName("oracle.jdbc.OracleDriver");
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
-      Connection connection = DriverManager.getConnection("jdbc:oracle:thin:@charlemagne.iutnc.univ-lorraine.fr:1521:infodb", this.identifiant, this.motdepasse);
-      if (connection != null) {
-          System.out.println("Connexion reussie a la base de donnees !");
-      } else {
-          System.out.println("Échec de la connexion à la base de données !");
-      }
-      return connection;
-  }
+        Connection connection = DriverManager.getConnection("jdbc:oracle:thin:@charlemagne.iutnc.univ-lorraine.fr:1521:infodb", this.identifiant, this.motdepasse);
+        if (connection != null) {
+            System.out.println("Connexion reussie a la base de donnees !");
+        } else {
+            System.out.println("Échec de la connexion à la base de données !");
+        }
+        return connection;
+    }
 
     public String getAllRestaurants() throws RemoteException {
         List<Restaurant> restaurants = new ArrayList<>();
         try{
-          Connection conn = connect();
-          // Mets l'autocommit à false
-          connect().setAutoCommit(false);
-          // Pose un verrou sur la table restaurant
-          connect().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+            Connection conn = connect();
+            // Mets l'autocommit à false
+            connect().setAutoCommit(false);
+            // Pose un verrou sur la table restaurant
+            connect().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
-          Statement stmt = conn.createStatement();
-          String sql = "SELECT * FROM RESTAURANTS";
-          ResultSet rs = stmt.executeQuery(sql);
+            Statement stmt = conn.createStatement();
+            String sql = "SELECT * FROM RESTAURANTS";
+            ResultSet rs = stmt.executeQuery(sql);
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String name = rs.getString("name");
@@ -82,7 +88,7 @@ public class ServiceRestaurant implements RestaurantService {
             return true;
         } catch (SQLException e) {
             // Annule la mise à jour
-            conn.rollback();
+            //conn.rollback();
             e.printStackTrace();
             System.out.println("Erreur lors de la tentative de réservation");
             throw new RemoteException("Database error.");
