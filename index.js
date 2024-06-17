@@ -46,17 +46,7 @@ async function fetchEtablissementsSup() {
 
     data.results.forEach(etabl => {
         if (etabl.coordonnees) {
-            const marker = L.marker([etabl.coordonnees.lat, etabl.coordonnees.lon], {
-                icon: L.icon({
-                    iconUrl: 'https://leafletjs.com/examples/custom-icons/leaf-green.png',
-                    iconSize: [38, 95],
-                    iconAnchor: [22, 94],
-                    popupAnchor: [-3, -76],
-                    shadowUrl: 'https://leafletjs.com/examples/custom-icons/leaf-shadow.png',
-                    shadowSize: [50, 64],
-                    shadowAnchor: [4, 62]
-                })
-            }).addTo(map);
+            const marker = L.marker([etabl.coordonnees.lat, etabl.coordonnees.lon]).addTo(map);
             marker.bindPopup(`
                 <b>${etabl.siege_lib}</b><br>
                 Type: ${etabl.type_d_etablissement}<br>
