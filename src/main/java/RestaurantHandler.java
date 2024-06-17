@@ -9,7 +9,13 @@ import java.rmi.registry.Registry;
 class RestaurantHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        if ("GET".equals(exchange.getRequestMethod())) {
+        CORSUtil.addCORSHeaders(exchange);
+        if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+            exchange.sendResponseHeaders(204, -1);  // No Content for preflight request
+            return;
+        }
+
+        if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
             try {
                 // On récupère l'annuaire
                 Registry registry = LocateRegistry.getRegistry("localhost", 1099);

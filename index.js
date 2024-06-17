@@ -6,6 +6,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 var stationMarkers = [];
 var eduMarkers = [];
+var restoMarker = [];
 var stationFetchInterval;
 var incidentMarkers = [];
 async function fetchStations() {
@@ -90,8 +91,15 @@ async function fetchIncidents() {
     }
 }
 
-function removeMarkers(markers) {
-    markers.forEach(marker => {
+function removeMarkers() {
+    stationMarkers.forEach(marker => {
+        map.removeLayer(marker);
+    });
+    eduMarkers.forEach(marker => {
+        map.removeLayer(marker);
+    });
+    restoMarker.forEach(marker => {
+
         map.removeLayer(marker);
     });
 }
@@ -103,10 +111,29 @@ async function fetchMeteo() {
 }
 
 async function fetchRestaurant() {
-    const responseRestaurant = await fetch('');
-    const dataRestaurant = await responseRestaurant.json();
+    try {
+        const responseRestaurant = await fetch('http://localhost:50000/restaurants', {
+            mode: 'cors' // Assurez-vous que le mode CORS est activé
+        });
+        const dataRestaurant = await responseRestaurant.json();
 
+        dataRestaurant.forEach(restaurant => {
+            if (restaurant.gpsCoordinates) {
+                const [lat, lon] = restaurant.gpsCoordinates.split(',').map(coord => parseFloat(coord.trim()));
+                const marker = L.marker([lat, lon]).addTo(map);
+                marker.bindPopup(`
+                    <b>${restaurant.name}</b><br>
+                    Adresse: ${restaurant.address}<br>
+                `);
+                restoMarker.push(marker);
+            }
+        });
+    } catch (error) {
+        console.error('Erreur lors de la récupération des restaurants :', error);
+    }
 }
+
+
 
 
 function displayMeteoMenu(meteoData) {
@@ -165,8 +192,8 @@ document.getElementById('menuBoutton').addEventListener('click', async () => {
 });
 
 document.getElementById('educationButton').addEventListener('click', async () => {
-    // Enlever les marqueurs des stations de vélos
-    removeMarkers(stationMarkers);
+    // Enlever les marqueurs
+    removeMarkers();
 
     // Enlever le fetch des stations de vélos de l'intervalle
     clearInterval(stationFetchInterval);
@@ -190,5 +217,19 @@ document.getElementById('incidentsButton').addEventListener('click', async () =>
     await fetchIncidents();
 });
 
+
+document.getElementById('restaurantButton').addEventListener('click', async () => {
+    console.log("click on restaurant");
+    removeMarkers();
+    clearInterval(stationFetchInterval);
+    hideMeteoMenu();
+    if (restoMarker.length === 0) {
+        await fetchRestaurant();
+    } else {
+        restoMarker.forEach(marker => marker.addTo(map));
+    }
+});
+
+// Initial fetch and interval setup
 stationFetchInterval = setInterval(fetchStations, 5000);
 fetchStations();
