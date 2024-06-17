@@ -1,0 +1,31 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+#map {
+    height: 600px;
+    position: relative;
+}
+
+#weatherButton {
+    padding: 5px 10px;
+    margin-left: 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#weatherMenu {
+    position: absolute;
+    top: 60px;
+    left: 10px;
+    padding: 10px;
+    background-color: white;
+    border: 1px solid black;
+    display: none;
+    z-index: 1000;
+    max-height: 400px;
+    overflow-y: auto;
+}
