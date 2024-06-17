@@ -1,7 +1,3 @@
-package Client;
-
-import Service.HTTPService;
-
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
@@ -22,7 +18,7 @@ public class ClientHTTP{
 			 */
 			HTTPService hs = (HTTPService) reg.lookup("http");
 			/*Lancer le service*/
-			System.out.println(hs.fetchData("https://carto.g-ny.org/data/cifs/cifs_waze_v2.json"));
+			System.out.println(hs.fetchData());
 			//System.out.println("Maintenant on essaye de faire une réservation : ");
 			//boolean response = rs.makeReservation("Titouan", "LETONDAL", 1, "06 07 09 37 39", 1);
 			//System.out.println(response);

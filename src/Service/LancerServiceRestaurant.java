@@ -4,6 +4,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 
+//Lancer sur windows Powershell : java -cp '.;ojdbc11.jar' LancerService username password (username et password de la base de données SQL Developer)
 public class LancerServiceRestaurant {
     public static void main(String[] args){
         System.out.println("Avant lancement.");

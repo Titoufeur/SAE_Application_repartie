@@ -80,6 +80,16 @@ async function fetchMeteo() {
     return meteoData;
 }
 
+async function fetchRestaurant() {
+    const responseRestaurant = await fetch('');
+    const dataRestaurant = await responseRestaurant.json();
+    
+    dataRestaurant.forEach(restaurant => {
+        
+    })
+}
+
+
 function displayMeteoMenu(meteoData) {
     const meteoMenu = document.getElementById('meteoMenu');
     meteoMenu.innerHTML = '';

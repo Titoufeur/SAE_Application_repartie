@@ -14,12 +14,15 @@ class RestaurantHandler implements HttpHandler {
                 // On récupère l'annuaire
                 Registry registry = LocateRegistry.getRegistry("localhost", 1099);
                 // On récupère le service
-                RestaurantService sr = (RestaurantService) registry.lookup("restaurant");
+                RestaurantService sr = (RestaurantService) registry.lookup("restaurants");
 
                 String response = sr.getAllRestaurants();
 
                 // Envoyer la réponse
                 exchange.sendResponseHeaders(200, response.getBytes().length);
+                OutputStream os = exchange.getResponseBody();
+                os.write(response.getBytes());
+                os.close();
             } catch (Exception e) {
                 e.printStackTrace();
                 exchange.sendResponseHeaders(500, 0);

@@ -10,6 +10,7 @@ public class LancerProxy {
         // Définir le contexte et le gestionnaire pour l'endpoint "/restaurants"
         //server.createContext("/restaurants", new RestaurantHandler());
         server.createContext("/incidents", new IncidentsHandler());
+        server.createContext("/restaurants", new RestaurantHandler());
         server.createContext("/test", new test());
         // Démarrer le serveur
         server.setExecutor(null);
