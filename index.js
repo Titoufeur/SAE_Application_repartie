@@ -77,12 +77,16 @@ async function fetchIncidents() {
         data.incidents.forEach(incident => {
             const coords = incident.location.polyline.split(' ');
             const marker = L.marker([coords[0], coords[1]]).addTo(map);
+            const startTime = new Date(incident.starttime);
+            const date = startTime.toLocaleDateString();
+            const time = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
             marker.bindPopup(`
-                <b>${incident.title}</b><br>
+                <b>${incident.short_description}</b><br>
                 Type: ${incident.type}<br>
                 Description: ${incident.description}<br>
-                Date: ${incident.startTime}<br>
-                Heure: ${incident.time}
+                Date: ${date}<br>
+                Heure: ${time}
             `);
             incidentMarkers.push(marker);
         });
@@ -99,7 +103,6 @@ function removeMarkers() {
         map.removeLayer(marker);
     });
     restoMarker.forEach(marker => {
-
         map.removeLayer(marker);
     });
 }
