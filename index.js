@@ -6,6 +6,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 var stationMarkers = [];
 var eduMarkers = [];
+var stationFetchInterval;
 
 async function fetchStations() {
     const stationInfoResponse = await fetch('https://transport.data.gouv.fr/gbfs/nancy/station_information.json');
@@ -98,9 +99,17 @@ function displayMeteoMenu(meteoData) {
     }
 }
 
+function hideMeteoMenu() {
+    const meteoMenu = document.getElementById('meteoMenu');
+    meteoMenu.style.display = 'none';
+}
+
 document.getElementById('stationVeloBoutton').addEventListener('click', async () => {
     // Enlever les marqueurs des établissements supérieurs
     removeMarkers(eduMarkers);
+
+    // Cacher le menu de la météo
+    hideMeteoMenu();
 
     // Redémarrer l'intervalle de mise à jour des stations de vélos
     if (!stationFetchInterval) {
@@ -133,6 +142,9 @@ document.getElementById('educationButton').addEventListener('click', async () =>
     // Enlever le fetch des stations de vélos de l'intervalle
     clearInterval(stationFetchInterval);
 
+    // Cacher le menu de la météo
+    hideMeteoMenu();
+
     // Afficher les établissements supérieurs
     if (eduMarkers.length === 0) {
         await fetchEtablissementsSup();
@@ -141,6 +153,6 @@ document.getElementById('educationButton').addEventListener('click', async () =>
     }
 });
 
-var stationFetchInterval = setInterval(fetchStations, 5000);
-
+// Initial fetch and interval setup
+stationFetchInterval = setInterval(fetchStations, 5000);
 fetchStations();
