@@ -7,7 +7,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 var stationMarkers = [];
 var eduMarkers = [];
 var stationFetchInterval;
-
+var incidentMarkers = [];
 async function fetchStations() {
     const stationInfoResponse = await fetch('https://transport.data.gouv.fr/gbfs/nancy/station_information.json');
     const stationInfoData = await stationInfoResponse.json();
@@ -68,6 +68,28 @@ async function fetchEtablissementsSup() {
     });
 }
 
+async function fetchIncidents() {
+    try {
+        const response = await fetch('http://localhost:50000/incidents');
+        const data = await response.json();
+
+        data.incidents.forEach(incident => {
+            const coords = incident.location.polyline.split(' ');
+            const marker = L.marker([coords[0], coords[1]]).addTo(map);
+            marker.bindPopup(`
+                <b>${incident.title}</b><br>
+                Type: ${incident.type}<br>
+                Description: ${incident.description}<br>
+                Date: ${incident.startTime}<br>
+                Heure: ${incident.time}
+            `);
+            incidentMarkers.push(marker);
+        });
+    } catch (error) {
+        console.error('Erreur lors de la récupération des incidents :', error);
+    }
+}
+
 function removeMarkers(markers) {
     markers.forEach(marker => {
         map.removeLayer(marker);
@@ -83,10 +105,7 @@ async function fetchMeteo() {
 async function fetchRestaurant() {
     const responseRestaurant = await fetch('');
     const dataRestaurant = await responseRestaurant.json();
-    
-    dataRestaurant.forEach(restaurant => {
-        
-    })
+
 }
 
 
@@ -163,6 +182,13 @@ document.getElementById('educationButton').addEventListener('click', async () =>
     }
 });
 
-// Initial fetch and interval setup
+document.getElementById('incidentsButton').addEventListener('click', async () => {
+
+    removeMarkers(eduMarkers);
+    clearInterval(stationFetchInterval);
+    hideMeteoMenu();
+    await fetchIncidents();
+});
+
 stationFetchInterval = setInterval(fetchStations, 5000);
 fetchStations();

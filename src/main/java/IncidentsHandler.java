@@ -9,6 +9,7 @@ import java.rmi.registry.Registry;
 class IncidentsHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
+        CORSUtil.addCORSHeaders(exchange);
         if ("GET".equals(exchange.getRequestMethod())) {
             try {
                 // On récupère l'annuaire
