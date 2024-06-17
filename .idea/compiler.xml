@@ -9,5 +9,8 @@
         <module name="SAE_Application_repartie" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="SAE_Application_repartie" target="11" />
+    </bytecodeTargetLevel>
   </component>
 </project>
