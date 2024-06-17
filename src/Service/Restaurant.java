@@ -1,5 +1,3 @@
-//package Service;
-
 import java.io.Serializable;
 
 public class Restaurant implements Serializable {
@@ -34,4 +32,9 @@ public class Restaurant implements Serializable {
        json.append("}");
        return json.toString();
    }
+
+   public String getName() {return this.name;}
+    public String getAddress() {return this.address;}
+    public String getGpsCoordinates() {return this.gpsCoordinates;}
+    public int getId() {return this.id;}
 }

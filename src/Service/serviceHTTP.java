@@ -11,7 +11,7 @@ public class serviceHTTP implements HTTPService {
     private final String url;
 
     public serviceHTTP(String url) {
-        this.url = url; // Assigner la valeur du paramètre url à this.url
+        this.url = url;
         this.httpClient = HttpClient.newBuilder().build();
     }
 

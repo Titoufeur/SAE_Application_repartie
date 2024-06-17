@@ -105,37 +105,124 @@ async function fetchMeteo() {
 
 async function fetchRestaurant() {
     try {
-        const responseRestaurant = await fetch('http://localhost:50000/restaurants', {
-            mode: 'cors' // Assurez-vous que le mode CORS est activé
+        const response = await fetch('http://localhost:50000/restaurants', {
+            mode: 'cors'
         });
-        const dataRestaurant = await responseRestaurant.json();
+        const restaurants = await response.json();
 
-        dataRestaurant.forEach(restaurant => {
+        restaurants.forEach(restaurant => {
             if (restaurant.gpsCoordinates) {
                 const [lat, lon] = restaurant.gpsCoordinates.split(',').map(coord => parseFloat(coord.trim()));
                 const marker = L.marker([lat, lon]).addTo(map);
-                marker.bindPopup(`
-                    <b>${restaurant.name}</b><br>
-                    Adresse: ${restaurant.address}<br>
-                `);
+                marker.restaurantInfo = restaurant;
+
+                // On crée un élément dom pour ajouter la popup
+                const popupContent = document.createElement('div');
+                popupContent.innerHTML = `
+            <b>${restaurant.name}</b><br>
+            Adresse: ${restaurant.address}<br>
+            <button class="reservation-button">Réserver</button>
+        `;
+
+                marker.bindPopup(popupContent);
+
+                marker.on('popupopen', () => {
+                    const popup = marker.getPopup();
+                    const content = popup.getContent();
+
+                    if (content instanceof HTMLElement) {
+                        const reserveButton = content.querySelector('.reservation-button');
+                        reserveButton.addEventListener('click', () => {
+                            showReservationForm(restaurant);
+                        });
+                    } else {
+                        console.error('Le contenu du popup n\'est pas un élément DOM :', content);
+                    }
+                });
                 restoMarker.push(marker);
             }
         });
+
     } catch (error) {
         console.error('Erreur lors de la récupération des restaurants :', error);
     }
 }
 
+function showReservationForm(restaurant) {
+    const formHtml = `
+        <div id="reservation-form">
+            <h3>Réserver pour ${restaurant.name}</h3>
+            <form id="reservation-form-data">
+                <!-- Vos champs de formulaire ici -->
+                <label for="firstName">Prénom:</label><br>
+                <input type="text" id="firstName" name="firstName"><br>
+                <label for="lastName">Nom:</label><br>
+                <input type="text" id="lastName" name="lastName"><br>
+                <label for="numGuests">Nombre de convives:</label><br>
+                <input type="number" id="numGuests" name="numGuests"><br>
+                <label for="phone">Téléphone:</label><br>
+                <input type="text" id="phone" name="phone"><br><br>
+                <input type="submit" value="Réserver">
+            </form>
+        </div>
+    `;
 
+    // Ajout du formulaire au DOM
+    document.body.insertAdjacentHTML('beforeend', formHtml);
+
+    // Ajout d'un eventlistener sur le formulaire
+    const reservationForm = document.getElementById('reservation-form-data');
+    reservationForm.addEventListener('submit', async function(event) {
+        event.preventDefault(); // pour empêcher le rechargement de la page
+
+        const formData = new FormData(reservationForm);
+        const firstName = formData.get('firstName');
+        const lastName = formData.get('lastName');
+        const numGuests = formData.get('numGuests');
+        const phone = formData.get('phone');
+
+        // on construit l'objet de réservation à partir des valeurs qu'on vient de récupérer
+        const reservationData = {
+            firstName: firstName,
+            lastName: lastName,
+            numGuests: parseInt(numGuests),
+            phone: phone,
+            restaurantId: restaurant.id
+        };
+
+        try {
+            // Envoyer la requête post pour réserver la table indiquée par le formulaire
+            const response = await fetch('http://localhost:50000/restaurants', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(reservationData)
+            });
+
+            if (response.ok) {//Lorsqu'on fait la requête POST, on reçoit une réponse pour savoir si c'est bon ou pas.
+                const result = await response.json();
+                console.log('Réservation réussie:', result);
+                alert('Réservation réussie !');
+            } else {
+                console.error('Erreur lors de la réservation:', response.status);
+                alert('Erreur lors de la réservation. Veuillez réessayer.');
+            }
+        } catch (error) {
+            console.error('Erreur inattendue lors de la réservation:', error);
+            alert('Erreur inattendue lors de la réservation. Veuillez réessayer.');
+        }
+    });
+}
 
 function displayMeteoMenu(meteoData) {
     const meteoMenu = document.getElementById('meteoMenu');
     meteoMenu.innerHTML = '';
     
     for (const [heure, data] of Object.entries(meteoData)) {
-        if (heure.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) { // Ensure it is a timestamp
+        if (heure.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
             const heureDiv = document.createElement('div');
-            heureDiv.classList.add('meteo-item'); // Ajoute une classe pour styliser avec CSS
+            heureDiv.classList.add('meteo-item');
             heureDiv.innerHTML = `
                 <div class="heure">${heure}</div>
                 <span>Température: ${data.temperature['2m']} K</span><br>
@@ -157,18 +244,14 @@ function hideMeteoMenu() {
 }
 
 document.getElementById('stationVeloBoutton').addEventListener('click', async () => {
-    // Enlever les marqueurs des établissements supérieurs
     removeMarkers(eduMarkers);
 
-    // Cacher le menu de la météo
     hideMeteoMenu();
 
-    // Redémarrer l'intervalle de mise à jour des stations de vélos
     if (!stationFetchInterval) {
         stationFetchInterval = setInterval(fetchStations, 5000);
     }
 
-    // Réafficher les stations de vélos
     if (stationMarkers.length === 0) {
         await fetchStations();
     } else {
@@ -188,16 +271,10 @@ document.getElementById('menuBoutton').addEventListener('click', async () => {
 });
 
 document.getElementById('educationButton').addEventListener('click', async () => {
-    // Enlever les marqueurs
     removeMarkers();
-
-    // Enlever le fetch des stations de vélos de l'intervalle
     clearInterval(stationFetchInterval);
-
-    // Cacher le menu de la météo
     hideMeteoMenu();
 
-    // Afficher les établissements supérieurs
     if (eduMarkers.length === 0) {
         await fetchEtablissementsSup();
     } else {
@@ -226,6 +303,5 @@ document.getElementById('restaurantButton').addEventListener('click', async () =
     }
 });
 
-// Initial fetch and interval setup
 stationFetchInterval = setInterval(fetchStations, 5000);
 fetchStations();

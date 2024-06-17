@@ -1,4 +1,3 @@
-//package Service;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.sql.Connection;
@@ -10,11 +9,13 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 public class ServiceRestaurant implements RestaurantService {
 
     private String motdepasse;
     private String identifiant;
-
 
     public ServiceRestaurant(String identifiant, String motdepasse){
         this.motdepasse = motdepasse;
@@ -29,22 +30,17 @@ public class ServiceRestaurant implements RestaurantService {
         }
         Connection connection = DriverManager.getConnection("jdbc:oracle:thin:@charlemagne.iutnc.univ-lorraine.fr:1521:infodb", this.identifiant, this.motdepasse);
         if (connection != null) {
-            System.out.println("Connexion reussie a la base de donnees !");
+            System.out.println("Connexion réussie à la BD");
         } else {
-            System.out.println("Échec de la connexion à la base de données !");
+            System.out.println("Échec de la connexion à la BD");
         }
         return connection;
     }
 
     public String getAllRestaurants() throws RemoteException {
         List<Restaurant> restaurants = new ArrayList<>();
-        try{
+        try {
             Connection conn = connect();
-            // Mets l'autocommit à false
-            connect().setAutoCommit(false);
-            // Pose un verrou sur la table restaurant
-            connect().setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-
             Statement stmt = conn.createStatement();
             String sql = "SELECT * FROM RESTAURANTS";
             ResultSet rs = stmt.executeQuery(sql);
@@ -60,11 +56,20 @@ public class ServiceRestaurant implements RestaurantService {
             stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
-            throw new RemoteException("Database error.");
+            throw new RemoteException("Erreur de base de données.");
         }
-        System.out.println("Restaurants retournes : ");
-        System.out.println(restaurantsListToJson(restaurants));
-        return restaurantsListToJson(restaurants);
+
+        JSONArray jsonArray = new JSONArray();
+        for (Restaurant restaurant : restaurants) {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("id", restaurant.getId());
+            jsonObject.put("name", restaurant.getName());
+            jsonObject.put("address", restaurant.getAddress());
+            jsonObject.put("gpsCoordinates", restaurant.getGpsCoordinates());
+            jsonArray.put(jsonObject);
+        }
+
+        return jsonArray.toString();
     }
 
     public boolean makeReservation(String firstName, String lastName, int numGuests, String phone, int restaurantId) throws RemoteException {
@@ -72,9 +77,6 @@ public class ServiceRestaurant implements RestaurantService {
         Connection conn = null;
         try {
             conn = connect();
-            // Mets l'autocommit à false
-            conn.setAutoCommit(false);
-            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, firstName);
             pstmt.setString(2, lastName);
@@ -82,30 +84,12 @@ public class ServiceRestaurant implements RestaurantService {
             pstmt.setString(4, phone);
             pstmt.setInt(5, restaurantId);
             pstmt.executeUpdate();
-            System.out.println("la réservation est bien enregistré dans la base de donnée");
-            // Valide la modification
-            conn.commit();
+            System.out.println("Réservation enregistrée dans la base de données.");
             return true;
         } catch (SQLException e) {
-            // Annule la mise à jour
-            //conn.rollback();
             e.printStackTrace();
-            System.out.println("Erreur lors de la tentative de réservation");
-            throw new RemoteException("Database error.");
+            System.out.println("Erreur lors de la réservation.");
+            throw new RemoteException("Erreur de base de données.");
         }
     }
-
-    public static String restaurantsListToJson(List<Restaurant> restaurants) {
-        StringBuilder json = new StringBuilder();
-        json.append("[");
-        for (int i = 0; i < restaurants.size(); i++) {
-            json.append(restaurants.get(i).toJson());
-            if (i < restaurants.size() - 1) {
-                json.append(",");
-            }
-        }
-        json.append("]");
-        return json.toString();
-    }
-
 }

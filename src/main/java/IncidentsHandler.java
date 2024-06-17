@@ -11,7 +11,9 @@ import java.rmi.registry.Registry;
 class IncidentsHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        CORSUtil.addCORSHeaders(exchange);
+        exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*"); // Permettre l'accès depuis n'importe quelle origine
+        exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS"); // Méthodes autorisées
+        exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization"); // En-têtes autorisés
         if ("GET".equals(exchange.getRequestMethod())) {
             try {
                 // On récupère l'annuaire
@@ -33,11 +35,11 @@ class IncidentsHandler implements HttpHandler {
                 os.close();
             } catch (Exception e) {
                 e.printStackTrace();
-                exchange.sendResponseHeaders(500, -1); // Indicate that the response length is unknown
+                exchange.sendResponseHeaders(500, -1);
                 exchange.getResponseBody().close();
             }
         } else {
-            exchange.sendResponseHeaders(405, -1); // Méthode non autorisée
+            exchange.sendResponseHeaders(405, -1);
             exchange.getResponseBody().close();
         }
     }
