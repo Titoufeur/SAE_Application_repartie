@@ -1,3 +1,5 @@
+//package Service;
+
 import java.io.Serializable;
 
 public class Restaurant implements Serializable {

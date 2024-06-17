@@ -1,3 +1,7 @@
+package Client;
+
+import Service.HTTPService;
+
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
@@ -13,9 +17,9 @@ public class ClientHTTP{
 			//Récupérer l'annuaire
 			Registry reg = LocateRegistry.getRegistry(args[0], 1099);
 			/*
-			* Créer une instance de l'objet du service
-			* Récupérer le service grace à son nom dans l'annuaire avec la méthode lookup
-			*/
+			 * Créer une instance de l'objet du service
+			 * Récupérer le service grace à son nom dans l'annuaire avec la méthode lookup
+			 */
 			HTTPService hs = (HTTPService) reg.lookup("http");
 			/*Lancer le service*/
 			System.out.println(hs.fetchData("https://carto.g-ny.org/data/cifs/cifs_waze_v2.json"));
