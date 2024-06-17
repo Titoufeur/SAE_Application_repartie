@@ -128,25 +128,28 @@ async function fetchRestaurant() {
 
 
 
-
 function displayMeteoMenu(meteoData) {
     const meteoMenu = document.getElementById('meteoMenu');
     meteoMenu.innerHTML = '';
+    
     for (const [heure, data] of Object.entries(meteoData)) {
         if (heure.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) { // Ensure it is a timestamp
             const heureDiv = document.createElement('div');
+            heureDiv.classList.add('meteo-item'); // Ajoute une classe pour styliser avec CSS
             heureDiv.innerHTML = `
-                <b>${heure}</b><br>
-                Température: ${data.temperature['2m']} K<br>
-                Risque de neige: ${data.risque_neige}<br>
-                Risque de pluie: ${data.pluie} mm<br>
-                Iso Zero: ${data.iso_zero} m<br>
-                Vent: ${data.vent_moyen['10m']} m/s, Rafales: ${data.vent_rafales['10m']} m/s
+                <div class="heure">${heure}</div>
+                <span>Température: ${data.temperature['2m']} K</span><br>
+                <span>Risque de neige: ${data.risque_neige}</span><br>
+                <span>Risque de pluie: ${data.pluie} mm</span><br>
+                <span>Iso Zero: ${data.iso_zero} m</span><br>
+                <span>Vent: ${data.vent_moyen['10m']} m/s, Rafales: ${data.vent_rafales['10m']} m/s</span>
             `;
             meteoMenu.appendChild(heureDiv);
         }
     }
 }
+
+
 
 function hideMeteoMenu() {
     const meteoMenu = document.getElementById('meteoMenu');

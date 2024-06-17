@@ -43,12 +43,31 @@ h1 button:hover {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* CSS pour les éléments météo */
 #meteoMenu {
-    display: none;
     background-color: white;
     border: 1px solid #ccc;
     padding: 10px;
     margin-top: 10px;
     width: 80%;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.meteo-item {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.meteo-item .heure {
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center; /* Centre le texte de l'heure */
+    margin-bottom: 5px; /* Ajoute un espace en bas de l'heure */
+}
+
+.meteo-item span {
+    display: block;
+    color: #666;
 }
