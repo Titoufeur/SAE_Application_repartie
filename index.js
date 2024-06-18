@@ -9,6 +9,7 @@ var eduMarkers = [];
 var restoMarker = [];
 var stationFetchInterval;
 var incidentMarkers = [];
+const urlProxy = 'http://localhost:8080';
 async function fetchStations() {
     const stationInfoResponse = await fetch('https://transport.data.gouv.fr/gbfs/nancy/station_information.json');
     const stationInfoData = await stationInfoResponse.json();
@@ -61,11 +62,12 @@ async function fetchEtablissementsSup() {
 
 async function fetchIncidents() {
     try {
-        const response = await fetch('http://localhost:50000/incidents');
+        const response = await fetch(urlProxy + '/incidents');
         const data = await response.json();
 
         data.incidents.forEach(incident => {
             const coords = incident.location.polyline.split(' ');
+            const address = incident.location.street;
             const marker = L.marker([coords[0], coords[1]]).addTo(map);
             const startTime = new Date(incident.starttime);
             const date = startTime.toLocaleDateString();
@@ -73,10 +75,11 @@ async function fetchIncidents() {
 
             marker.bindPopup(`
                 <b>${incident.short_description}</b><br>
-                Type: ${incident.type}<br>
-                Description: ${incident.description}<br>
+                Type: ${incident.type}<br><br>
+                Description: ${incident.description}<br><br>
                 Date: ${date}<br>
-                Heure: ${time}
+                Heure: ${time}<br>
+                Lieux: ${address}
             `);
             incidentMarkers.push(marker);
         });
@@ -105,7 +108,7 @@ async function fetchMeteo() {
 
 async function fetchRestaurant() {
     try {
-        const response = await fetch('http://localhost:50000/restaurants', {
+        const response = await fetch(urlProxy + '/restaurants', {
             mode: 'cors'
         });
         const restaurants = await response.json();
@@ -149,6 +152,8 @@ async function fetchRestaurant() {
 }
 
 function showReservationForm(restaurant) {
+    hideMeteoMenu();
+    hideNewRestaurantForm();
     const formHtml = `
         <div id="reservation-form">
             <h3>Réserver pour ${restaurant.name}</h3>
@@ -163,13 +168,18 @@ function showReservationForm(restaurant) {
                 <label for="phone">Téléphone:</label><br>
                 <input type="text" id="phone" name="phone"><br><br>
                 <input type="submit" value="Réserver">
+                <button type="button" id="btnCancel">Annuler</button>
             </form>
         </div>
     `;
 
     // Ajout du formulaire au DOM
     document.body.insertAdjacentHTML('beforeend', formHtml);
-
+    //Bouton pour annuler et cacher le formulaire
+    const btnCancel = document.getElementById("btnCancel");
+    btnCancel.addEventListener("click", () => {
+        hideForm();
+    });
     // Ajout d'un eventlistener sur le formulaire
     const reservationForm = document.getElementById('reservation-form-data');
     reservationForm.addEventListener('submit', async function(event) {
@@ -192,7 +202,8 @@ function showReservationForm(restaurant) {
 
         try {
             // Envoyer la requête post pour réserver la table indiquée par le formulaire
-            const response = await fetch('http://localhost:50000/restaurants', {
+            const response = await fetch(urlProxy + '/restaurants', {
+                mode: 'cors',
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -203,19 +214,23 @@ function showReservationForm(restaurant) {
             if (response.ok) {//Lorsqu'on fait la requête POST, on reçoit une réponse pour savoir si c'est bon ou pas.
                 const result = await response.json();
                 console.log('Réservation réussie:', result);
-                alert('Réservation réussie !');
+                alert('Réservation réussie ! 1 table pour ' + result.firstName + ' ' + result.lastName);
             } else {
                 console.error('Erreur lors de la réservation:', response.status);
                 alert('Erreur lors de la réservation. Veuillez réessayer.');
             }
         } catch (error) {
             console.error('Erreur inattendue lors de la réservation:', error);
-            alert('Erreur inattendue lors de la réservation. Veuillez réessayer.');
+        }
+        finally {
+            hideForm();
         }
     });
 }
 
 function displayMeteoMenu(meteoData) {
+    hideNewRestaurantForm();
+    hideForm();
     const meteoMenu = document.getElementById('meteoMenu');
     meteoMenu.innerHTML = '';
     
@@ -236,17 +251,34 @@ function displayMeteoMenu(meteoData) {
     }
 }
 
-
+//Fonctions pour cacher les différents éléments qui s'affichent.
 
 function hideMeteoMenu() {
     const meteoMenu = document.getElementById('meteoMenu');
     meteoMenu.style.display = 'none';
 }
 
+function hideForm() {
+    const form = document.getElementById('reservation-form');
+    if (form) {
+        form.remove();
+    }
+}
+
+function hideNewRestaurantForm() {
+    const form = document.getElementById('new-restaurant-form');
+    if (form) {
+        form.remove();
+    }
+}
+
+
 document.getElementById('stationVeloBoutton').addEventListener('click', async () => {
     removeMarkers(eduMarkers);
 
     hideMeteoMenu();
+    hideNewRestaurantForm();
+    hideForm();
 
     if (!stationFetchInterval) {
         stationFetchInterval = setInterval(fetchStations, 5000);
@@ -274,6 +306,8 @@ document.getElementById('educationButton').addEventListener('click', async () =>
     removeMarkers();
     clearInterval(stationFetchInterval);
     hideMeteoMenu();
+    hideNewRestaurantForm();
+    hideForm();
 
     if (eduMarkers.length === 0) {
         await fetchEtablissementsSup();
@@ -287,6 +321,8 @@ document.getElementById('incidentsButton').addEventListener('click', async () =>
     removeMarkers(eduMarkers);
     clearInterval(stationFetchInterval);
     hideMeteoMenu();
+    hideNewRestaurantForm();
+    hideForm();
     await fetchIncidents();
 });
 
@@ -296,12 +332,89 @@ document.getElementById('restaurantButton').addEventListener('click', async () =
     removeMarkers();
     clearInterval(stationFetchInterval);
     hideMeteoMenu();
+    hideNewRestaurantForm();
+    hideForm();
     if (restoMarker.length === 0) {
         await fetchRestaurant();
     } else {
         restoMarker.forEach(marker => marker.addTo(map));
     }
 });
+
+map.on('click', onMapClick);
+
+function onMapClick(e) {
+    hideForm();
+    const lat = e.latlng.lat;
+    const lon = e.latlng.lng;
+
+    const formHtml = `
+        <div id="new-restaurant-form" style="position: absolute; top: 10px; left: 10px; background: white; padding: 10px; border: 1px solid black; z-index: 1000;">
+            <h3>Ajouter un nouveau restaurant</h3>
+            <form id="new-restaurant-form-data">
+                <label for="restaurantName">Nom du restaurant:</label><br>
+                <input type="text" id="restaurantName" name="restaurantName"><br>
+                <label for="restaurantAddress">Adresse:</label><br>
+                <input type="text" id="restaurantAddress" name="restaurantAddress"><br>
+                <input type="hidden" id="restaurantLat" name="restaurantLat" value="${lat}">
+                <input type="hidden" id="restaurantLon" name="restaurantLon" value="${lon}">
+                <input type="submit" value="Ajouter">
+                <button type="button" id="btnCancel">Annuler</button>
+            </form>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', formHtml);
+    //ajout d'un event listener sur le bouton pour fermer le formulaire d'ajout
+    const btnCancel = document.getElementById("btnCancel");
+    btnCancel.addEventListener("click", () => {
+        hideNewRestaurantForm();
+    });
+    document.getElementById('new-restaurant-form-data').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const restaurantName = formData.get('restaurantName');
+        const restaurantAddress = formData.get('restaurantAddress');
+        const restaurantLat = parseFloat(formData.get('restaurantLat'));
+        const restaurantLon = parseFloat(formData.get('restaurantLon'));
+
+        const newRestaurant = {
+            name: restaurantName,
+            address: restaurantAddress,
+            gpsCoordinates: `${restaurantLat},${restaurantLon}`
+        };
+
+        try {
+            const response = await fetch(urlProxy + '/restaurants', {
+                mode: 'cors',
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newRestaurant)
+            });
+
+            if (response.ok) {
+                const addedRestaurant = await response.json();
+                const marker = L.marker([restaurantLat, restaurantLon]).addTo(map);
+                marker.bindPopup(`<b>${addedRestaurant.name}</b><br>${addedRestaurant.address}`);
+                restoMarker.push(marker);
+                alert('Restaurant ajouté avec succès !');
+            } else {
+                console.error('Erreur lors de l\'ajout du restaurant:', response.status);
+                alert('Erreur lors de l\'ajout du restaurant. Veuillez réessayer.');
+            }
+        } catch (error) {
+            console.error('Erreur inattendue lors de l\'ajout du restaurant:', error);
+            alert('Erreur inattendue. Veuillez réessayer.');
+        } finally {
+            hideNewRestaurantForm();
+        }
+    });
+}
+
+
 
 stationFetchInterval = setInterval(fetchStations, 5000);
 fetchStations();

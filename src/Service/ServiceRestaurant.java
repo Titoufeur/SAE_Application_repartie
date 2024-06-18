@@ -92,4 +92,30 @@ public class ServiceRestaurant implements RestaurantService {
             throw new RemoteException("Erreur de base de données.");
         }
     }
+
+    @Override
+    public boolean addRestaurant(String name, String address, String gpsCoordinates) throws RemoteException {
+        String sql = "INSERT INTO RESTAURANTS (id, name, address, gps_coordinates) VALUES (restaurants_seq.NEXTVAL, ?, ?, ?)";
+        try (Connection conn = connect();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, name);
+            pstmt.setString(2, address);
+            pstmt.setString(3, gpsCoordinates);
+            int rowsAffected = pstmt.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("Restaurant ajouté à la base de données.");
+                return true;
+            } else {
+                System.out.println("Échec de l'ajout du restaurant.");
+                return false;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Erreur lors de l'ajout du restaurant.");
+            throw new RemoteException("Erreur de base de données.");
+        }
+    }
+
 }
