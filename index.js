@@ -9,13 +9,33 @@ var eduMarkers = [];
 var restoMarker = [];
 var stationFetchInterval;
 var incidentMarkers = [];
-const urlProxy = 'http://localhost:8080';
-async function fetchStations() {
-    const stationInfoResponse = await fetch('https://transport.data.gouv.fr/gbfs/nancy/station_information.json');
-    const stationInfoData = await stationInfoResponse.json();
+const urlProxy = 'http://10.11.87.109:8080';
 
-    const stationStatusResponse = await fetch('https://transport.data.gouv.fr/gbfs/nancy/station_status.json');
-    const stationStatusData = await stationStatusResponse.json();
+
+async function fetchUrl(url) {
+    try {
+        const response = await fetch(url);
+        return await response.json();
+    } catch (error) {
+        console.log('Erreur lors d\'un fetch. Tentative de passer par le proxy. ' + error);
+        try {
+            const proxyResponse = await fetch(urlProxy + '/fetch?url=' + url, {
+                mode: 'cors'
+            });
+            console.log('Fetch réalisé via le proxy');
+            return await proxyResponse.json();
+        } catch (proxyError) {
+            console.log('Erreur lors du fetch par Proxy. Abandon.' + proxyError);
+            return null;
+        }
+    }
+}
+async function fetchStations() {
+    removeMarkers();
+    console.log('FetchStations')
+    const stationInfoData = await fetchUrl('https://transport.data.gouv.fr/gbfs/nancy/station_information.json');
+
+    const stationStatusData = await fetchUrl('https://transport.data.gouv.fr/gbfs/nancy/station_status.json')
 
     const stations = stationInfoData.data.stations;
     const stationStatus = stationStatusData.data.stations;
@@ -42,8 +62,7 @@ async function fetchStations() {
 }
 
 async function fetchEtablissementsSup() {
-    const response = await fetch('https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/fr-esr-implantations_etablissements_d_enseignement_superieur_publics/records?limit=50&refine=localisation%3A%22Alsace%20-%20Champagne-Ardenne%20-%20Lorraine%3ENancy-Metz%3EMeurthe-et-Moselle%3ENancy%22');
-    const data = await response.json();
+    const data = await fetchUrl('https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/fr-esr-implantations_etablissements_d_enseignement_superieur_publics/records?limit=50&refine=localisation%3A%22Alsace%20-%20Champagne-Ardenne%20-%20Lorraine%3ENancy-Metz%3EMeurthe-et-Moselle%3ENancy%22')
 
     data.results.forEach(etabl => {
         if (etabl.coordonnees) {
@@ -62,8 +81,8 @@ async function fetchEtablissementsSup() {
 
 async function fetchIncidents() {
     try {
-        const response = await fetch(urlProxy + '/incidents');
-        const data = await response.json();
+        //const response = await fetch(urlProxy + '/incidents');
+        const data = await fetchUrl('https://carto.g-ny.org/data/cifs/cifs_waze_v2.json');
 
         data.incidents.forEach(incident => {
             const coords = incident.location.polyline.split(' ');
@@ -98,15 +117,13 @@ function removeMarkers() {
     restoMarker.forEach(marker => {
         map.removeLayer(marker);
     });
-}
-
-async function fetchMeteo() {
-    const meteoResponse = await fetch('https://www.infoclimat.fr/public-api/gfs/json?_ll=48.67103,6.15083&_auth=ARsDFFIsBCZRfFtsD3lSe1Q8ADUPeVRzBHgFZgtuAH1UMQNgUTNcPlU5VClSfVZkUn8AYVxmVW0Eb1I2WylSLgFgA25SNwRuUT1bPw83UnlUeAB9DzFUcwR4BWMLYwBhVCkDb1EzXCBVOFQoUmNWZlJnAH9cfFVsBGRSPVs1UjEBZwNkUjIEYVE6WyYPIFJjVGUAZg9mVD4EbwVhCzMAMFQzA2JRMlw5VThUKFJiVmtSZQBpXGtVbwRlUjVbKVIuARsDFFIsBCZRfFtsD3lSe1QyAD4PZA%3D%3D&_c=19f3aa7d766b6ba91191c8be71dd1ab2');
-    const meteoData = await meteoResponse.json();
-    return meteoData;
+    incidentMarkers.forEach(marker => {
+        map.removeLayer(marker);
+    })
 }
 
 async function fetchRestaurant() {
+    removeMarkers();
     try {
         const response = await fetch(urlProxy + '/restaurants', {
             mode: 'cors'
@@ -152,13 +169,11 @@ async function fetchRestaurant() {
 }
 
 function showReservationForm(restaurant) {
-    hideMeteoMenu();
-    hideNewRestaurantForm();
+    hideMenus();
     const formHtml = `
         <div id="reservation-form">
             <h3>Réserver pour ${restaurant.name}</h3>
             <form id="reservation-form-data">
-                <!-- Vos champs de formulaire ici -->
                 <label for="firstName">Prénom:</label><br>
                 <input type="text" id="firstName" name="firstName"><br>
                 <label for="lastName">Nom:</label><br>
@@ -178,7 +193,7 @@ function showReservationForm(restaurant) {
     //Bouton pour annuler et cacher le formulaire
     const btnCancel = document.getElementById("btnCancel");
     btnCancel.addEventListener("click", () => {
-        hideForm();
+        hideMenus();
     });
     // Ajout d'un eventlistener sur le formulaire
     const reservationForm = document.getElementById('reservation-form-data');
@@ -201,7 +216,7 @@ function showReservationForm(restaurant) {
         };
 
         try {
-            // Envoyer la requête post pour réserver la table indiquée par le formulaire
+            // on envoie la requête post pour réserver la table demandée par le formulaire
             const response = await fetch(urlProxy + '/restaurants', {
                 mode: 'cors',
                 method: 'POST',
@@ -223,24 +238,43 @@ function showReservationForm(restaurant) {
             console.error('Erreur inattendue lors de la réservation:', error);
         }
         finally {
-            hideForm();
+            hideMenus();
         }
     });
 }
 
 function displayMeteoMenu(meteoData) {
-    hideNewRestaurantForm();
-    hideForm();
+    hideMenus();
     const meteoMenu = document.getElementById('meteoMenu');
     meteoMenu.innerHTML = '';
-    
+
+    const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+
+    // URL des icônes
+    const sunIconUrl = 'sun.png';
+    const rainIconUrl = 'cloudy.png'; // Remplacez par l'URL de votre icône de nuage pluvieux
+
     for (const [heure, data] of Object.entries(meteoData)) {
         if (heure.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+            const date = new Date(heure);
+            const dayName = days[date.getDay()];
+            const dayNumber = date.getDate();
+            const monthName = months[date.getMonth()];
+            const year = date.getFullYear();
+            const hour = date.getHours().toString().padStart(2, '0');
+            const minute = date.getMinutes().toString().padStart(2, '0');
+
+            const temperatureCelsius = (data.temperature['2m'] - 273.15).toFixed(2);
+
+            const weatherIconUrl = data.pluie > 0 ? rainIconUrl : sunIconUrl;
+
             const heureDiv = document.createElement('div');
             heureDiv.classList.add('meteo-item');
             heureDiv.innerHTML = `
-                <div class="heure">${heure}</div>
-                <span>Température: ${data.temperature['2m']} K</span><br>
+                <div class="heure">${dayName} ${dayNumber} ${monthName} ${year} ${hour}:${minute}</div>
+                <img src="${weatherIconUrl}" alt="Weather icon" style="width: 24px; height: 24px;"><br>
+                <span>Température: ${temperatureCelsius} °C</span><br>
                 <span>Risque de neige: ${data.risque_neige}</span><br>
                 <span>Risque de pluie: ${data.pluie} mm</span><br>
                 <span>Iso Zero: ${data.iso_zero} m</span><br>
@@ -251,35 +285,25 @@ function displayMeteoMenu(meteoData) {
     }
 }
 
-//Fonctions pour cacher les différents éléments qui s'affichent.
 
-function hideMeteoMenu() {
+//Fonction pour cacher les différents éléments qui s'affichent.
+function hideMenus(){
+    const restaurantForm = document.getElementById('new-restaurant-form');
+    if (restaurantForm) {
+        restaurantForm.remove();
+    }
+    const reservationForm = document.getElementById('reservation-form');
+    if (reservationForm) {
+        reservationForm.remove();
+    }
     const meteoMenu = document.getElementById('meteoMenu');
     meteoMenu.style.display = 'none';
 }
 
-function hideForm() {
-    const form = document.getElementById('reservation-form');
-    if (form) {
-        form.remove();
-    }
-}
-
-function hideNewRestaurantForm() {
-    const form = document.getElementById('new-restaurant-form');
-    if (form) {
-        form.remove();
-    }
-}
-
 
 document.getElementById('stationVeloBoutton').addEventListener('click', async () => {
-    removeMarkers(eduMarkers);
-
-    hideMeteoMenu();
-    hideNewRestaurantForm();
-    hideForm();
-
+    removeMarkers();
+    hideMenus();
     if (!stationFetchInterval) {
         stationFetchInterval = setInterval(fetchStations, 5000);
     }
@@ -294,7 +318,7 @@ document.getElementById('stationVeloBoutton').addEventListener('click', async ()
 document.getElementById('menuBoutton').addEventListener('click', async () => {
     const meteoMenu = document.getElementById('meteoMenu');
     if (meteoMenu.style.display === 'none' || meteoMenu.style.display === '') {
-        const meteoData = await fetchMeteo();
+        const meteoData = await fetchUrl('https://www.infoclimat.fr/public-api/gfs/json?_ll=48.67103,6.15083&_auth=ARsDFFIsBCZRfFtsD3lSe1Q8ADUPeVRzBHgFZgtuAH1UMQNgUTNcPlU5VClSfVZkUn8AYVxmVW0Eb1I2WylSLgFgA25SNwRuUT1bPw83UnlUeAB9DzFUcwR4BWMLYwBhVCkDb1EzXCBVOFQoUmNWZlJnAH9cfFVsBGRSPVs1UjEBZwNkUjIEYVE6WyYPIFJjVGUAZg9mVD4EbwVhCzMAMFQzA2JRMlw5VThUKFJiVmtSZQBpXGtVbwRlUjVbKVIuARsDFFIsBCZRfFtsD3lSe1QyAD4PZA%3D%3D&_c=19f3aa7d766b6ba91191c8be71dd1ab2')
         displayMeteoMenu(meteoData);
         meteoMenu.style.display = 'block';
     } else {
@@ -305,9 +329,7 @@ document.getElementById('menuBoutton').addEventListener('click', async () => {
 document.getElementById('educationButton').addEventListener('click', async () => {
     removeMarkers();
     clearInterval(stationFetchInterval);
-    hideMeteoMenu();
-    hideNewRestaurantForm();
-    hideForm();
+    hideMenus();
 
     if (eduMarkers.length === 0) {
         await fetchEtablissementsSup();
@@ -320,9 +342,7 @@ document.getElementById('incidentsButton').addEventListener('click', async () =>
 
     removeMarkers(eduMarkers);
     clearInterval(stationFetchInterval);
-    hideMeteoMenu();
-    hideNewRestaurantForm();
-    hideForm();
+    hideMenus();
     await fetchIncidents();
 });
 
@@ -331,9 +351,7 @@ document.getElementById('restaurantButton').addEventListener('click', async () =
     console.log("click on restaurant");
     removeMarkers();
     clearInterval(stationFetchInterval);
-    hideMeteoMenu();
-    hideNewRestaurantForm();
-    hideForm();
+    hideMenus();
     if (restoMarker.length === 0) {
         await fetchRestaurant();
     } else {
@@ -342,9 +360,8 @@ document.getElementById('restaurantButton').addEventListener('click', async () =
 });
 
 map.on('click', onMapClick);
-
 function onMapClick(e) {
-    hideForm();
+    hideMenus();
     const lat = e.latlng.lat;
     const lon = e.latlng.lng;
 
@@ -368,7 +385,7 @@ function onMapClick(e) {
     //ajout d'un event listener sur le bouton pour fermer le formulaire d'ajout
     const btnCancel = document.getElementById("btnCancel");
     btnCancel.addEventListener("click", () => {
-        hideNewRestaurantForm();
+        hideMenus();
     });
     document.getElementById('new-restaurant-form-data').addEventListener('submit', async function(event) {
         event.preventDefault();
@@ -396,10 +413,7 @@ function onMapClick(e) {
             });
 
             if (response.ok) {
-                const addedRestaurant = await response.json();
-                const marker = L.marker([restaurantLat, restaurantLon]).addTo(map);
-                marker.bindPopup(`<b>${addedRestaurant.name}</b><br>${addedRestaurant.address}`);
-                restoMarker.push(marker);
+                fetchRestaurant();
                 alert('Restaurant ajouté avec succès !');
             } else {
                 console.error('Erreur lors de l\'ajout du restaurant:', response.status);
@@ -409,12 +423,9 @@ function onMapClick(e) {
             console.error('Erreur inattendue lors de l\'ajout du restaurant:', error);
             alert('Erreur inattendue. Veuillez réessayer.');
         } finally {
-            hideNewRestaurantForm();
+            hideMenus();
         }
     });
 }
-
-
-
-stationFetchInterval = setInterval(fetchStations, 5000);
+stationFetchInterval = setInterval(fetchStations, 10000);
 fetchStations();

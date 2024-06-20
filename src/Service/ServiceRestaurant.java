@@ -77,6 +77,8 @@ public class ServiceRestaurant implements RestaurantService {
         Connection conn = null;
         try {
             conn = connect();
+            conn.setAutoCommit(false);
+            conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, firstName);
             pstmt.setString(2, lastName);
@@ -84,12 +86,28 @@ public class ServiceRestaurant implements RestaurantService {
             pstmt.setString(4, phone);
             pstmt.setInt(5, restaurantId);
             pstmt.executeUpdate();
+            conn.commit();
             System.out.println("Réservation enregistrée dans la base de données.");
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
+            try{
+                if (conn != null){
+                    conn.rollback(); //On annule la transaction en cas d'erreur
+                }
+            } catch (SQLException sqlE){
+                sqlE.printStackTrace();
+            }
             System.out.println("Erreur lors de la réservation.");
             throw new RemoteException("Erreur de base de données.");
+        } finally {
+            try {
+                if (conn != null) {
+                    conn.setAutoCommit(true);
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
         }
     }
 

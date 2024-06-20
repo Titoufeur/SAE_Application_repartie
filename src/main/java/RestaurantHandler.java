@@ -23,10 +23,11 @@ class RestaurantHandler implements HttpHandler {
         //Traitement de la requête GET
         if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
             try {
-                // Récupérer les restaurants depuis le service
+                // on récupère les restaurants depuis le service
                 Registry registry = LocateRegistry.getRegistry("localhost", 1099);
                 RestaurantService sr = (RestaurantService) registry.lookup("restaurants");
                 String response = sr.getAllRestaurants();
+                // On renvoie la réponse
                 exchange.sendResponseHeaders(200, response.getBytes().length);
                 OutputStream os = exchange.getResponseBody();
                 os.write(response.getBytes());
@@ -125,6 +126,8 @@ class RestaurantHandler implements HttpHandler {
                         //On construit maintenant l'objet JSON qu'on renvoie au client
                         JSONObject jsonResponse = new JSONObject();
                         jsonResponse.put("status", "Restaurant ajouté avec succès");
+                        jsonResponse.put("name", name);
+                        jsonResponse.put("address", address);
                         byte[] responseBytes = jsonResponse.toString().getBytes(StandardCharsets.UTF_8);
                         exchange.getResponseHeaders().set("Content-Type", "application/json");
                         exchange.sendResponseHeaders(200, responseBytes.length);
