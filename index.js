@@ -9,7 +9,7 @@ var eduMarkers = [];
 var restoMarker = [];
 var stationFetchInterval;
 var incidentMarkers = [];
-const urlProxy = 'http://10.11.87.109:8080';
+const urlProxy = 'http://localhost:8080';
 
 
 async function fetchUrl(url) {
